@@ -20,7 +20,7 @@ class _CameraLayoverState extends State<CameraLayover> {
   late CameraController _cameraController;
   late Future<void> _initializeControllerFuture;
   String? _selectedImagePath;
-  bool _loadingImage = false;
+  bool _flashOn = false;
 
   @override
   void initState() {
@@ -36,17 +36,68 @@ class _CameraLayoverState extends State<CameraLayover> {
     super.dispose();
   }
 
+  ///
+  /// method to take photo
+  ///
   Future<void> _takePhoto() async {
     await _initializeControllerFuture;
     final image = await _cameraController.takePicture();
 
     setState(() {
-      _loadingImage = true;
       _selectedImagePath = image.path;
     });
   }
 
-  Future initCamera(CameraDescription cameraDescription) async {
+  ///
+  /// method to turn on flash
+  ///
+  Future<void> _turnFlashOn() async {
+    if (_cameraController.value.isInitialized && !_flashOn) {
+      await _cameraController.setFlashMode(FlashMode.torch);
+    } else if (_cameraController.value.isInitialized && _flashOn) {
+      await _cameraController.setFlashMode(FlashMode.off);
+    }
+    setState(() {
+      _flashOn = !_flashOn;
+    });
+  }
+
+  ///
+  /// method to toggle camera
+  ///
+  Future<void> _toggleCamera() async {
+    if (_cameraController.value.isInitialized) {
+      final lensDescription = _cameraController.description.lensDirection;
+      CameraDescription newCameraDescription;
+      if (lensDescription == CameraLensDirection.front) {
+        newCameraDescription = widget.cameraDescriptions.firstWhere(
+            (element) => element.lensDirection == CameraLensDirection.back);
+      } else {
+        newCameraDescription = widget.cameraDescriptions.firstWhere(
+            (element) => element.lensDirection == CameraLensDirection.front);
+      }
+
+      await initCamera(newCameraDescription);
+
+      // int currentCameraIndex = widget.cameraDescriptions.indexOf(_cameraController.description);
+      // int newCameraIndex = (currentCameraIndex + 1) % widget.cameraDescriptions.length;
+      // //await _cameraController.dispose();
+      // _cameraController = CameraController(widget.cameraDescriptions[newCameraIndex], ResolutionPreset.high);
+      // try {
+      //   await _cameraController.initialize().then((_) {
+      //     if (!mounted) return;
+      //     setState(() {});
+      //   });
+      // } on CameraException catch (e) {
+      //   debugPrint("camera error $e");
+      // }
+    }
+  }
+
+  ///
+  /// initialize camera at the start
+  ///
+  Future<void> initCamera(CameraDescription cameraDescription) async {
     _cameraController =
         CameraController(cameraDescription, ResolutionPreset.ultraHigh);
     try {
@@ -136,18 +187,61 @@ class _CameraLayoverState extends State<CameraLayover> {
                     ),
                     Positioned(
                       bottom: 50,
-                      child: InkWell(
-                        onTap: () async {
-                          _takePhoto();
-                        },
-                        child: Container(
-                          height: 50,
-                          width: 50,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(25),
+                      child: Row(
+                        children: [
+                          InkWell(
+                            onTap: () {
+                              _turnFlashOn();
+                            },
+                            child: Icon(
+                              !_flashOn
+                                  ? Icons.flash_on_rounded
+                                  : Icons.flash_off_rounded,
+                              color: Colors.white,
+                              size: 40,
+                            ),
                           ),
-                        ),
+                          const SizedBox(
+                            width: 50,
+                          ),
+                          InkWell(
+                            onTap: () async {
+                              _takePhoto();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(3.0),
+                              height: 60,
+                              width: 60,
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(30),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 4,
+                                  )),
+                              child: Container(
+                                height: 50,
+                                width: 50,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 50,
+                          ),
+                          InkWell(
+                            onTap: () {
+                              _toggleCamera();
+                            },
+                            child: const Icon(
+                              Icons.cameraswitch_rounded,
+                              color: Colors.white,
+                              size: 40,
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   ]
