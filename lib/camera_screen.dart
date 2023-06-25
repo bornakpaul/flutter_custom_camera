@@ -52,6 +52,14 @@ class _CameraLayoverState extends State<CameraLayover> {
   /// method to turn on flash
   ///
   Future<void> _turnFlashOn() async {
+    if (_cameraController.description.lensDirection ==
+        CameraLensDirection.front) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Flash not available for front camera"),
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
     if (_cameraController.value.isInitialized && !_flashOn) {
       await _cameraController.setFlashMode(FlashMode.torch);
     } else if (_cameraController.value.isInitialized && _flashOn) {
@@ -68,6 +76,7 @@ class _CameraLayoverState extends State<CameraLayover> {
   Future<void> _toggleCamera() async {
     if (_cameraController.value.isInitialized) {
       final lensDescription = _cameraController.description.lensDirection;
+      debugPrint("lensDescription: $lensDescription");
       CameraDescription newCameraDescription;
       if (lensDescription == CameraLensDirection.front) {
         newCameraDescription = widget.cameraDescriptions.firstWhere(
